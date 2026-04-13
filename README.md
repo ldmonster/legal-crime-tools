@@ -19,13 +19,13 @@ A CLI tool for extracting, rendering, and composing isometric tile sprites and m
 ## Build
 
 ```sh
-go build -o legal crime tools .
+go build -o legal-crime-tools .
 ```
 
 ## Usage
 
 ```
-legal crime tools [command] [flags]
+legal-crime-tools [command] [flags]
 ```
 
 ### Global Flags
@@ -44,7 +44,7 @@ legal crime tools [command] [flags]
 Parses the `.tile` descriptor and slices each tile frame from its source sprite sheet into a separate PNG. Output is organized by source image name.
 
 ```sh
-legal crime tools extract --tile Chicago.tile --pics Pics --out tiles_out
+legal-crime-tools extract --tile Chicago.tile --pics Pics --out tiles_out
 ```
 
 Output structure:
@@ -64,7 +64,7 @@ tiles_out/
 Exports each source BMP as a PNG and stacks all `Block*.bmp` files into a single `blocks_unified.png`.
 
 ```sh
-legal crime tools atlas --tile Chicago.tile --pics Pics --out tiles_out
+legal-crime-tools atlas --tile Chicago.tile --pics Pics --out tiles_out
 ```
 
 Output:
@@ -81,7 +81,7 @@ tiles_out/_atlas/
 Renders one of the 38 block types (0–37) as a standalone isometric image.
 
 ```sh
-legal crime tools render-bt --bt 5 --tile Chicago.tile --pics Pics
+legal-crime-tools render-bt --bt 5 --tile Chicago.tile --pics Pics
 ```
 
 | Flag | Default | Description |
@@ -94,7 +94,7 @@ legal crime tools render-bt --bt 5 --tile Chicago.tile --pics Pics
 Composes a complete isometric map view from a `.map` file. Empty cells default to tile 0 (Road).
 
 ```sh
-legal crime tools render-map --map Maps/Chicago.map --tile Chicago.tile --pics Pics
+legal-crime-tools render-map --map Maps/Chicago.map --tile Chicago.tile --pics Pics
 ```
 
 | Flag | Default | Description |
@@ -181,7 +181,7 @@ screenY = (col + row) * 10 + topPad
 ## Project Structure
 
 ```
-deobfuscate/
+legal-crime-tools/
 ├── main.go              # Entry point
 ├── go.mod
 ├── cmd/
