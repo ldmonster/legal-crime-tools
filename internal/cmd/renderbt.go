@@ -7,9 +7,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/ldmonster/legal-crime-tools/imageutil"
-	"github.com/ldmonster/legal-crime-tools/render"
-	"github.com/ldmonster/legal-crime-tools/tile"
+	"github.com/ldmonster/legal-crime-tools/internal/imageutil"
+	"github.com/ldmonster/legal-crime-tools/internal/render"
+	"github.com/ldmonster/legal-crime-tools/internal/tile"
 )
 
 var (

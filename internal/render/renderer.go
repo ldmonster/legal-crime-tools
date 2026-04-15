@@ -7,9 +7,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/ldmonster/legal-crime-tools/imageutil"
-	"github.com/ldmonster/legal-crime-tools/mapfile"
-	"github.com/ldmonster/legal-crime-tools/tile"
+	"github.com/ldmonster/legal-crime-tools/internal/imageutil"
+	"github.com/ldmonster/legal-crime-tools/internal/mapfile"
+	"github.com/ldmonster/legal-crime-tools/internal/tile"
 )
 
 const (

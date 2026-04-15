@@ -7,7 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/ldmonster/legal-crime-tools/imageutil"
+	"github.com/ldmonster/legal-crime-tools/internal/imageutil"
 )
 
 var (

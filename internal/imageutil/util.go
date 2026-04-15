@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/ldmonster/legal-crime-tools/bmp"
+	"github.com/ldmonster/legal-crime-tools/internal/bmp"
 )
 
 var nonAlnum = regexp.MustCompile(`[^A-Za-z0-9_]+`)
