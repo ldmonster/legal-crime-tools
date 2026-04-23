@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 
@@ -11,17 +12,44 @@ var (
 	patchRestore bool
 )
 
-// Original hardcoded server IPs in LegalCrime.EXE (all defunct).
+// Original hardcoded server IPs in LegalCrime.EXE / Capone.EXE / Diary.EXE
+// (all defunct). Offsets are discovered at runtime by scanning for these
+// strings, so the same command works across binary variants (Capone ships
+// them ~0x3200 earlier than LegalCrime).
 type ipPatch struct {
 	offset   int64
 	original []byte
 }
 
-var patches = []ipPatch{
-	{0x78c0a, append([]byte("208.194.67.16"), 0x00)},  // 14 bytes
-	{0x78c18, append([]byte("194.100.92.102"), 0x00)}, // 15 bytes
-	{0x78c27, append([]byte("207.226.185.80"), 0x00)}, // 15 bytes
-	{0x78c36, append([]byte("194.100.92.99"), 0x00)},  // 14 bytes
+// originalIPs are the 4 defunct hardcoded IPs, each expected to be followed
+// by a NUL terminator in the binary. Slot length = len(original)+1.
+var originalIPs = []string{
+	"208.194.67.16",  // 14-byte slot
+	"194.100.92.102", // 15-byte slot
+	"207.226.185.80", // 15-byte slot
+	"194.100.92.99",  // 14-byte slot
+}
+
+// discoverPatches scans the binary for each original IP followed by NUL and
+// returns a patch descriptor for each. All 4 must be found exactly once.
+func discoverPatches(exePath string) ([]ipPatch, error) {
+	data, err := os.ReadFile(exePath)
+	if err != nil {
+		return nil, fmt.Errorf("read %s: %w", exePath, err)
+	}
+	out := make([]ipPatch, 0, len(originalIPs))
+	for _, ip := range originalIPs {
+		needle := append([]byte(ip), 0x00)
+		idx := bytes.Index(data, needle)
+		if idx < 0 {
+			return nil, fmt.Errorf("original IP %q not found in %s (binary already patched or unsupported variant? run --restore first)", ip, exePath)
+		}
+		if dup := bytes.Index(data[idx+1:], needle); dup >= 0 {
+			return nil, fmt.Errorf("original IP %q found multiple times (ambiguous) in %s", ip, exePath)
+		}
+		out = append(out, ipPatch{offset: int64(idx), original: needle})
+	}
+	return out, nil
 }
 
 var patchCmd = &cobra.Command{
@@ -67,9 +95,9 @@ func runPatch(cmd *cobra.Command, args []string) error {
 }
 
 func maxIPLen() int {
-	minSlot := len(patches[0].original) - 1
-	for _, p := range patches[1:] {
-		if sl := len(p.original) - 1; sl < minSlot {
+	minSlot := len(originalIPs[0])
+	for _, ip := range originalIPs[1:] {
+		if sl := len(ip); sl < minSlot {
 			minSlot = sl
 		}
 	}
@@ -81,6 +109,15 @@ func patchEXE(exePath, ip string) error {
 	maxLen := maxIPLen()
 	if len(ipBytes) > maxLen {
 		return fmt.Errorf("IP '%s' is %d chars, max is %d", ip, len(ipBytes), maxLen)
+	}
+
+	patches, err := discoverPatches(exePath)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Discovered %d IP slots:\n", len(patches))
+	for _, p := range patches {
+		fmt.Printf("  0x%05x: %s\n", p.offset, nullTermString(p.original))
 	}
 
 	backup := exePath + ".orig"

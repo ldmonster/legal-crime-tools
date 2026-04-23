@@ -12,6 +12,8 @@ A CLI tool for extracting, rendering, and composing isometric tile sprites and m
 - **Dual BMP support** — Handles both 8-bit paletted and 24-bit true-color BMPs with automatic transparency keying
 - **Key generation** — Generate, write, and verify LCData.bin license keys
 - **EXE patching** — Replace hardcoded dead server IPs in LegalCrime.EXE with a custom IP
+- **BMP conversion** — Convert sprite sheets between three BMP formats (`lc`, `capone`, `new`) in bulk or individually
+- **Animation strips** — Assemble extracted multi-frame tiles into horizontal animation strip PNGs
 
 ## Requirements
 
@@ -123,6 +125,54 @@ legal-crime-tools keygen --verify LCData.bin    # verify an existing key file
 | `--write` | | Write a single key to LCData.bin at this path |
 | `--verify` | | Verify an existing LCData.bin file |
 
+#### `convert-pics` — Convert BMP sprite sheets between formats
+
+Converts BMP files between the three supported pics formats. Detects the source format automatically; already-in-target-format files are silently skipped.
+
+```sh
+# single file
+legal-crime-tools convert-pics -i Pics/Faces.bmp -o Out/Faces.bmp --to capone
+
+# entire directory
+legal-crime-tools convert-pics -i Pics/ -o CaponePics/ --to capone -v
+```
+
+| Flag | Default | Description |
+|---|---|---|
+| `-i`, `--input` | *(required)* | Input BMP file or directory |
+| `-o`, `--output` | *(required)* | Output BMP file or directory |
+| `--to` | *(required)* | Target format: `lc`, `capone`, or `new` |
+
+See **BMP Sprite Sheets** below for a description of each format.
+
+#### `animate` — Build animation strips from extracted frames
+
+Scans an `extract` output directory for tiles named `<base>_fNN.png`, groups them into animations by base name, and writes one **horizontal strip PNG per animation** — one row, frames side by side.
+
+```sh
+legal-crime-tools animate -i tiles_out/ -o animations/ --side 50
+```
+
+Each frame is pasted **without scaling**, centred inside a `--side × --side` cell. Frames larger than the cell are clipped. The output directory tree mirrors the input subdirectory structure.
+
+| Flag | Default | Description |
+|---|---|---|
+| `-i`, `--input` | *(required)* | Directory of extracted tile PNGs |
+| `-o`, `--output` | `animations` | Output directory for strip PNGs |
+| `--side` | *(required)* | Width **and** height of each frame cell in pixels |
+
+Example output:
+```
+animations/
+  Godf/
+    Enemy_Godfather_NE.png   # 6 frames → 300 × 50 px strip
+    Enemy_Godfather_NW.png
+    ...
+  EnemyAtt/
+    Enemy_bat_man_idle.png
+    ...
+```
+
 #### `patch` — Patch server IPs in EXE
 
 Replaces hardcoded dead server IPs in LegalCrime.EXE with a custom IP address. Creates a `.orig` backup before patching.
@@ -171,12 +221,15 @@ END
 
 Two variants are supported:
 
-| Source | Bit Depth | Obfuscated | Transparency |
-|---|---|---|---|
-| `Pics/` | 8-bit paletted | No | Palette index 254 |
-| `Capone/PICS/` | 24-bit true-color | XOR `0xCD` | RGB `#4f374a` (R=79 G=55 B=74) |
+Three named formats are supported:
 
-Both variants produce identical transparency — the background color `#4f374a` at palette index 254 is keyed to alpha 0.
+| Name | `--to` value | Bit Depth | Obfuscation | Transparency |
+|---|---|---|---|---|
+| LC (old) | `lc` | 8-bit paletted | None | Palette index 254 |
+| Capone | `capone` | 24-bit true-color | XOR `0xCD` | RGB `#4f374a` |
+| New / AI-enhanced | `new` | 24-bit true-color | None (BITMAPV4) | RGB `#4f374a` |
+
+All formats produce identical transparency — the background color `#4f374a` at palette index 254 is keyed to alpha 0. `convert-pics` auto-detects the source format and accepts any of the three as input.
 
 ## Block Types
 
@@ -227,9 +280,12 @@ legal-crime-tools/
 │   │   ├── renderbt.go      # render-bt command
 │   │   ├── rendermap.go     # render-map command
 │   │   ├── keygen.go        # keygen command
-│   │   └── patch.go         # patch command
+│   │   ├── patch.go         # patch command
+│   │   ├── convertpics.go   # convert-pics command
+│   │   └── animate.go       # animate command
 │   ├── bmp/
-│   │   └── reader.go        # BMP decoder (8-bit, 24-bit, XOR deobfuscation)
+│   │   ├── reader.go        # BMP decoder (8-bit, 24-bit, XOR deobfuscation)
+│   │   └── writer.go        # BMP encoder (lc 8-bit, capone XOR 24-bit, new 24-bit)
 │   ├── tile/
 │   │   └── tile.go          # .tile file parser & block type table
 │   ├── mapfile/
